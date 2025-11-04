@@ -1,0 +1,22 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+
+[project]
+name = "clickup-sdk"
+version = "0.1.0"
+description = "Rest API automation"
+readme = "README.md"
+requires-python = ">=3.13"
+license = { text = "MIT" }
+authors = [{ name = "Muhiddin Kabraliev", email = "contact@muhiddindev.uz" }]
+dependencies = []
+
+
+[project.urls]
+Homepage = "https://github.com/Muhiddin0/clickup-sdk"
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["clickup_sdk"]
