@@ -1,22 +1,41 @@
 [build-system]
-requires = ["hatchling>=1.18"]
-build-backend = "hatchling.build"
-
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "clickup-sdk"
-version = "0.1.0"
-description = "Rest API automation"
+version = "1.0.0"
+description = "Python SDK for ClickUp API v2 - aiogram style"
 readme = "README.md"
-requires-python = ">=3.13"
-license = { text = "MIT" }
-authors = [{ name = "Muhiddin Kabraliev", email = "contact@muhiddindev.uz" }]
-dependencies = []
+requires-python = ">=3.8"
+dependencies = [
+    "aiohttp>=3.9.0",
+]
+authors = [
+    {name = "ClickUp SDK Contributors"}
+]
+keywords = ["clickup", "api", "sdk", "async", "aiogram"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "black>=23.0.0",
+    "mypy>=1.0.0",
+]
 
-[project.urls]
-Homepage = "https://github.com/Muhiddin0/clickup-sdk"
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["clickup_sdk*"]
 
-
-[tool.hatch.build.targets.wheel]
-packages = ["clickup_sdk"]
