@@ -10,6 +10,9 @@ from .filters import (
     EventTypeFilter,
     CombinedFilter,
     custom_field_changed,
+    custom_field_set,
+    custom_field_removed,
+    custom_field_updated,
     status_changed,
     assignee_changed
 )
@@ -26,6 +29,9 @@ __all__ = [
     "EventTypeFilter",
     "CombinedFilter",
     "custom_field_changed",
+    "custom_field_set",
+    "custom_field_removed",
+    "custom_field_updated",
     "status_changed",
     "assignee_changed"
 ]

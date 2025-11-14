@@ -51,7 +51,26 @@ class ClickUp:
     async def _get_session(self) -> aiohttp.ClientSession:
         """Get or create aiohttp session."""
         if self._session is None or self._session.closed:
-            self._session = aiohttp.ClientSession()
+            # Create session with proper timeout configuration
+            # Timeout is set to avoid "Timeout context manager should be used inside a task" error
+            # Using ClientTimeout with explicit values to avoid context manager issues
+            timeout = aiohttp.ClientTimeout(
+                total=30,
+                connect=10,
+                sock_read=10,
+                sock_connect=10
+            )
+            connector = aiohttp.TCPConnector(
+                limit=100,
+                limit_per_host=30,
+                ttl_dns_cache=300,
+                force_close=False
+            )
+            self._session = aiohttp.ClientSession(
+                timeout=timeout,
+                connector=connector,
+                raise_for_status=False
+            )
         return self._session
     
     async def close(self):

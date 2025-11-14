@@ -2,6 +2,7 @@
 from typing import Optional, Callable, Dict, Any, List
 from abc import ABC, abstractmethod
 import logging
+import json
 
 from .events import WebhookEvent
 
@@ -28,19 +29,67 @@ class Filter(ABC):
 class CustomFieldFilter(Filter):
     """Filter for custom field changes"""
     
-    def __init__(self, field_id: Optional[str] = None, field_name: Optional[str] = None):
+    def __init__(
+        self, 
+        field_id: Optional[str] = None, 
+        field_name: Optional[str] = None,
+        on_set: bool = True,
+        on_remove: bool = True,
+        on_update: bool = True
+    ):
         """
         Initialize custom field filter.
         
         Args:
             field_id: Custom field ID to filter by
             field_name: Custom field name to filter by (alternative to field_id)
+            on_set: Filter when value is set (before empty/None, after has value). Default: True
+            on_remove: Filter when value is removed (before has value, after empty/None). Default: True
+            on_update: Filter when value is updated (both before and after have values). Default: True
         """
         if not field_id and not field_name:
             raise ValueError("Either field_id or field_name must be provided")
         
         self.field_id = field_id
         self.field_name = field_name
+        self.on_set = on_set
+        self.on_remove = on_remove
+        self.on_update = on_update
+    
+    def _is_empty(self, value) -> bool:
+        """Check if value is considered empty"""
+        if value is None:
+            return True
+        if isinstance(value, (list, dict, str)):
+            return len(value) == 0
+        if isinstance(value, (int, float)):
+            return False  # Numbers are never empty
+        return not bool(value)
+    
+    def _is_filled(self, value) -> bool:
+        """Check if value is considered filled"""
+        return not self._is_empty(value)
+    
+    def _check_change_type(self, before, after) -> Optional[str]:
+        """
+        Determine the type of change: 'set', 'remove', or 'update'
+        
+        Returns:
+            'set' if value was set (before empty, after filled)
+            'remove' if value was removed (before filled, after empty)
+            'update' if value was updated (both filled)
+            None if no clear change type
+        """
+        before_empty = self._is_empty(before)
+        after_empty = self._is_empty(after)
+        
+        if before_empty and self._is_filled(after):
+            return 'set'
+        elif self._is_filled(before) and after_empty:
+            return 'remove'
+        elif self._is_filled(before) and self._is_filled(after):
+            return 'update'
+        return None
     
     async def check(self, event: WebhookEvent) -> bool:
         """Check if custom field changed"""
@@ -53,41 +102,123 @@ class CustomFieldFilter(Filter):
         for item in event.history_items:
             field = item.get("field", "")
             field_id = item.get("field_id") or item.get("id")
+            before = item.get("before", {})
+            after = item.get("after", {})
+            
+            # Determine change type
+            change_type = self._check_change_type(before, after)
+            
+            # Check if this change type should be filtered
+            if change_type == 'set' and not self.on_set:
+                continue
+            if change_type == 'remove' and not self.on_remove:
+                continue
+            if change_type == 'update' and not self.on_update:
+                continue
             
             # Check by field ID
             if self.field_id:
-                # Direct field_id match
-                if field_id and str(field_id) == str(self.field_id):
+                target_id = str(self.field_id).strip()
+                
+                # Direct field_id match in item root
+                if field_id and str(field_id).strip() == target_id:
                     return True
+                if item.get("id") and str(item.get("id")).strip() == target_id:
+                    return True
+                
                 # Check if field_id is in the field string
-                if field and str(self.field_id) in str(field):
+                if field and target_id in str(field):
                     return True
-                # Check in custom field structure
-                after = item.get("after", {})
-                before = item.get("before", {})
+                
+                # Helper function to recursively search for field_id
+                def find_field_id_in_dict(d, target):
+                    """Recursively search for field_id in dictionary"""
+                    if not isinstance(d, dict):
+                        return False
+                    
+                    # Check direct id fields
+                    for key in ["id", "field_id", "custom_field_id"]:
+                        if key in d and str(d[key]).strip() == target:
+                            return True
+                    
+                    # Check nested custom_field structure
+                    if "custom_field" in d and isinstance(d["custom_field"], dict):
+                        cf = d["custom_field"]
+                        for key in ["id", "field_id", "custom_field_id"]:
+                            if key in cf and str(cf[key]).strip() == target:
+                                return True
+                    
+                    # Recursively check nested dictionaries
+                    for value in d.values():
+                        if isinstance(value, dict):
+                            if find_field_id_in_dict(value, target):
+                                return True
+                        elif isinstance(value, list):
+                            for elem in value:
+                                if isinstance(elem, dict):
+                                    if find_field_id_in_dict(elem, target):
+                                        return True
+                    
+                    return False
+                
+                # Check in after dict
                 if isinstance(after, dict):
-                    # Custom fields might have id field
-                    if after.get("id") == self.field_id or after.get("field_id") == self.field_id:
+                    if find_field_id_in_dict(after, target_id):
                         return True
+                
+                # Check in before dict
                 if isinstance(before, dict):
-                    if before.get("id") == self.field_id or before.get("field_id") == self.field_id:
+                    if find_field_id_in_dict(before, target_id):
                         return True
+                
+                # Deep search in entire item (as last resort)
+                item_str = json.dumps(item, default=str)
+                if target_id in item_str:
+                    return True
             
             # Check by field name
             if self.field_name:
-                # Direct field name match (case insensitive)
-                if field and self.field_name.lower() in field.lower():
-                    return True
-                # Check in custom field name
-                after = item.get("after", {})
-                before = item.get("before", {})
+                search_name = self.field_name.lower().strip()
+                
+                # Direct field name match (case insensitive, substring match)
+                if field:
+                    field_lower = field.lower().strip()
+                    if search_name == field_lower or search_name in field_lower or field_lower in search_name:
+                        return True
+                
+                # Check after dict
                 if isinstance(after, dict):
-                    # Check name field in custom field structure
-                    if after.get("name") and self.field_name.lower() in after.get("name", "").lower():
-                        return True
+                    # Check name field
+                    if after.get("name"):
+                        name_lower = str(after.get("name", "")).lower().strip()
+                        if search_name == name_lower or search_name in name_lower or name_lower in search_name:
+                            return True
+                    # Check label field (some custom fields use label)
+                    if after.get("label"):
+                        label_lower = str(after.get("label", "")).lower().strip()
+                        if search_name == label_lower or search_name in label_lower or label_lower in search_name:
+                            return True
+                    # Check value field if it contains name
+                    if after.get("value"):
+                        value_str = str(after.get("value", "")).lower()
+                        if search_name in value_str:
+                            return True
+                
+                # Check before dict
                 if isinstance(before, dict):
-                    if before.get("name") and self.field_name.lower() in before.get("name", "").lower():
-                        return True
+                    if before.get("name"):
+                        name_lower = str(before.get("name", "")).lower().strip()
+                        if search_name == name_lower or search_name in name_lower or name_lower in search_name:
+                            return True
+                    if before.get("label"):
+                        label_lower = str(before.get("label", "")).lower().strip()
+                        if search_name == label_lower or search_name in label_lower or label_lower in search_name:
+                            return True
+                
+                # Check if field name is in the entire item structure (deep search)
+                item_str = json.dumps(item, default=str).lower()
+                if search_name in item_str:
+                    return True
         
         return False
 
@@ -222,9 +353,36 @@ class CombinedFilter(Filter):
 
 
 # Convenience functions
-def custom_field_changed(field_id: Optional[str] = None, field_name: Optional[str] = None) -> CustomFieldFilter:
+def custom_field_changed(
+    field_id: Optional[str] = None, 
+    field_name: Optional[str] = None,
+    on_set: bool = True,
+    on_remove: bool = True,
+    on_update: bool = True
+) -> CustomFieldFilter:
     """Create custom field filter"""
-    return CustomFieldFilter(field_id=field_id, field_name=field_name)
+    return CustomFieldFilter(
+        field_id=field_id, 
+        field_name=field_name,
+        on_set=on_set,
+        on_remove=on_remove,
+        on_update=on_update
+    )
+
+
+def custom_field_set(field_id: Optional[str] = None, field_name: Optional[str] = None) -> CustomFieldFilter:
+    """Create filter for when custom field value is set (only on_set=True)"""
+    return CustomFieldFilter(field_id=field_id, field_name=field_name, on_set=True, on_remove=False, on_update=False)
+
+
+def custom_field_removed(field_id: Optional[str] = None, field_name: Optional[str] = None) -> CustomFieldFilter:
+    """Create filter for when custom field value is removed (only on_remove=True)"""
+    return CustomFieldFilter(field_id=field_id, field_name=field_name, on_set=False, on_remove=True, on_update=False)
+
+
+def custom_field_updated(field_id: Optional[str] = None, field_name: Optional[str] = None) -> CustomFieldFilter:
+    """Create filter for when custom field value is updated (only on_update=True)"""
+    return CustomFieldFilter(field_id=field_id, field_name=field_name, on_set=False, on_remove=False, on_update=True)
 
 
 def status_changed(from_status: Optional[str] = None, to_status: Optional[str] = None) -> TaskStatusFilter:

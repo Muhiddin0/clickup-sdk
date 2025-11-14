@@ -1,6 +1,9 @@
 """
 ClickUp Webhook Filter Example - Custom Field Filter
 """
+
+
+
 import asyncio
 import os
 import logging
@@ -13,6 +16,9 @@ from clickup_sdk.webhook import (
     status_changed
 )
 
+from webhook_setter import WebhookManager
+
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -20,7 +26,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 dispatcher = WebhookDispatcher()
-
+webhook_manager = WebhookManager()
 
 # Example 1: Custom field o'zgarganda tutib olish (field_id bilan)
 @dispatcher.on("taskUpdated", CustomFieldFilter(field_id="custom_field_123"))
@@ -42,10 +48,10 @@ async def handle_custom_field_change_by_id(event: WebhookEvent):
 
 
 # Example 2: Custom field o'zgarganda tutib olish (field_name bilan)
-@dispatcher.on("taskUpdated", CustomFieldFilter(field_name="Priority"))
+@dispatcher.on("taskUpdated", CustomFieldFilter(field_name="broker dedline"))
 async def handle_custom_field_change_by_name(event: WebhookEvent):
     """Custom field o'zgarganda (field_name bilan)"""
-    logger.info(f"🎯 'Priority' custom field o'zgardi! Task ID: {event.task_id}")
+    logger.info(f"🎯 'broker dedline' custom field o'zgardi! Task ID: {event.task_id}")
     
     if event.history_items:
         for item in event.history_items:
@@ -93,6 +99,27 @@ async def handle_multiple_filters(event: WebhookEvent):
 async def handle_all_task_updates(event: WebhookEvent):
     """Barcha task update eventlar uchun (filter yo'q)"""
     logger.debug(f"📝 Task updated (no filter): {event.task_id}")
+    
+    # Debug: barcha fieldlarni ko'rsatish
+    if event.history_items:
+        logger.info("🔍 Debug - History items:")
+        for idx, item in enumerate(event.history_items):
+            logger.info(f"  Item {idx}:")
+            logger.info(f"    field: {item.get('field', 'N/A')}")
+            logger.info(f"    field_id: {item.get('field_id', 'N/A')}")
+            logger.info(f"    id: {item.get('id', 'N/A')}")
+            logger.info(f"    before: {item.get('before', {})}")
+            logger.info(f"    after: {item.get('after', {})}")
+            
+            # Custom field structure ni tekshirish
+            after = item.get("after", {})
+            before = item.get("before", {})
+            if isinstance(after, dict):
+                logger.info(f"    after.name: {after.get('name', 'N/A')}")
+                logger.info(f"    after.type: {after.get('type', 'N/A')}")
+            if isinstance(before, dict):
+                logger.info(f"    before.name: {before.get('name', 'N/A')}")
+                logger.info(f"    before.type: {before.get('type', 'N/A')}")
 
 
 async def main():
@@ -102,19 +129,29 @@ async def main():
     server = WebhookServer(
         dispatcher=dispatcher,
         secret=webhook_secret,
-        path="/webhook"
+        path="/clickup-webhook"
     )
     
     logger.info("🚀 Starting ClickUp Webhook Server with Filters...")
-    logger.info(f"📡 Listening on http://0.0.0.0:8000/webhook")
+    logger.info(f"📡 Listening on http://0.0.0.0:3000/clickup-webhook")
     logger.info(f"📝 Registered events: {dispatcher.get_registered_events()}")
     
-    await server.start(host="0.0.0.0", port=3000)
+    # Get current directory and clickup_sdk directory for auto-reload
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    clickup_sdk_dir = os.path.join(current_dir, "clickup_sdk")
+    
+    await server.start(
+        host="0.0.0.0", 
+        port=3000, 
+        reload=True,
+        reload_dirs=[current_dir, clickup_sdk_dir]
+    )
 
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        webhook_manager.initialize_webhook()
+        asyncio.run(main(), debug=True)
     except KeyboardInterrupt:
         logger.info("👋 Shutting down webhook server...")
 

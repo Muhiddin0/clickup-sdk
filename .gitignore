@@ -201,3 +201,10 @@ pyrightconfig.json
 
 
 # End of https://www.toptal.com/developers/gitignore/api/python,pythonvanilla
+
+# Project specific
+logs/
+*.log
+.env
+.env.local
+.env.*.local
