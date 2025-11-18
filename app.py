@@ -34,7 +34,7 @@ async def main():
     # Initialize webhook
     try:
         logger.info("🔄 Initializing ClickUp webhook...")
-        # webhook_manager.initialize_webhook()
+        webhook_manager.initialize_webhook()
     except Exception as e:
         logger.error(f"❌ Failed to initialize webhook: {e}", exc_info=True)
         logger.warning("⚠️ Continuing without webhook initialization...")
