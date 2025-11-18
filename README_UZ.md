@@ -132,7 +132,30 @@ ClickUp'da taskning "Broker" custom fieldiga qiymat qo'yilganda:
 4. **Xabar tayyorlanadi**: Task ma'lumotlaridan formatlangan xabar yaratiladi
 5. **Telegramga yuboriladi**: Brokerning Telegram ID'siga xabar yuboriladi
 
-### 3. Xabar formati
+### 3. Buxgalterga to'lov xabarnomasi
+
+Status `pul tushishi kutilmoqda` ga o'tganda:
+
+1. **Event qabul qilinadi**: `taskStatusUpdated` eventi keladi
+2. **Filter tekshiriladi**: `status_changed(to_status="pul tushishi kutilmoqda")`
+3. **Relationship o'qiladi**: Taskdagi `Bug'galter | Summa` custom fieldidan bog'langan task ID olinadi
+4. **Buxgalter ma'lumoti**: Bog'langan taskdan `telegram_id` olinadi
+5. **Message + button**: Summaga oid ma'lumotlar bilan xabar va inline keyboard generatsiya qilinadi
+6. **Telegramga yuboriladi**: Buxgalterning Telegram'iga xabar boradi
+
+Xabarda quyidagilar bo'ladi:
+
+- Asosiy task nomi, statusi va listi
+- Summa yozuvi nomi
+- Kutilayotgan summa va dedlayn
+
+Inline keyboard:
+
+- `🔗 Taskni ochish` – asosiy task URL
+- `📄 Summa kartochkasi` – relation task URL (agar mavjud bo'lsa)
+- `✅ Pul qabul qilindi` – callback tugma
+
+### 4. Xabar formati
 
 Brokerlarga yuboriladigan xabar quyidagi ma'lumotlarni o'z ichiga oladi:
 
@@ -151,7 +174,7 @@ Brokerlarga yuboriladigan xabar quyidagi ma'lumotlarni o'z ichiga oladi:
 📅 Broker dedline: [Sana]
 ```
 
-### 4. Inline keyboard
+### 5. Inline keyboard
 
 Har bir xabarda quyidagi tugmalar mavjud:
 

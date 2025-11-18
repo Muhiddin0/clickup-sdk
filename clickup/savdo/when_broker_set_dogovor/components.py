@@ -22,7 +22,7 @@ DATE_FORMAT = "%d.%m.%Y"
 MILLISECONDS_TO_SECONDS = 1000
 
 
-async def create_broker_message(task_id: str) -> str:
+async def create_message(task_id: str) -> str:
     """
     Create formatted message from task data.
 
@@ -93,9 +93,7 @@ async def create_broker_message(task_id: str) -> str:
     return message
 
 
-def create_broker_keyboard(
-    task_url: str, task_id: str
-) -> Dict[str, List[List[Dict[str, str]]]]:
+def create_keyboard(task_id: str) -> Dict[str, List[List[Dict[str, str]]]]:
     """
     Create inline keyboard for broker message.
 
@@ -107,9 +105,8 @@ def create_broker_keyboard(
         Inline keyboard markup dictionary
     """
     buttons: List[List[Dict[str, str]]] = [
-        [{"text": "🔗 Taskni ochish", "url": task_url}],
         [
-            {"text": "✅ Lot qo'yildi", "callback_data": f"lot_in={task_id}"},
+            {"text": "✅ Lot qo'yildi", "callback_data": f"dogovor_in={task_id}"},
         ],
     ]
 

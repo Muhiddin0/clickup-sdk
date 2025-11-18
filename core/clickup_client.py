@@ -1,6 +1,7 @@
 """
 ClickUp Client - Global client instance with proper initialization.
 """
+
 import logging
 from clickup_sdk import ClickUp
 
@@ -15,7 +16,7 @@ _clickup_client: ClickUp | None = None
 def get_clickup_client() -> ClickUp:
     """
     Get or create global ClickUp client instance.
-    
+
     Returns:
         ClickUp client instance
     """
@@ -31,4 +32,3 @@ def get_clickup_client() -> ClickUp:
 def get_clickup() -> ClickUp:
     """Get ClickUp client (alias for get_clickup_client)."""
     return get_clickup_client()
-
