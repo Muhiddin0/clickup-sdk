@@ -106,7 +106,7 @@ def create_keyboard(task_id: str) -> Dict[str, List[List[Dict[str, str]]]]:
     """
     buttons: List[List[Dict[str, str]]] = [
         [
-            {"text": "✅ Lot qo'yildi", "callback_data": f"dogovor_in={task_id}"},
+            {"text": "✅ Documentlar tugatildi", "callback_data": f"dogovor_in={task_id}"},
         ],
     ]
 

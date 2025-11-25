@@ -106,12 +106,6 @@ def create_accountant_keyboard(
     """
     buttons: List[List[Dict[str, str]]] = []
 
-    if task_url:
-        buttons.append([{"text": "🔗 Taskni ochish", "url": task_url}])
-
-    if payment_task_url:
-        buttons.append([{"text": "📄 Summa kartochkasi", "url": payment_task_url}])
-
     buttons.append(
         [
             {

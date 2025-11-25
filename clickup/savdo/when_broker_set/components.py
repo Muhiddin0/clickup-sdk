@@ -107,7 +107,6 @@ def create_broker_keyboard(
         Inline keyboard markup dictionary
     """
     buttons: List[List[Dict[str, str]]] = [
-        [{"text": "🔗 Taskni ochish", "url": task_url}],
         [
             {"text": "✅ Lot qo'yildi", "callback_data": f"lot_in={task_id}"},
         ],
