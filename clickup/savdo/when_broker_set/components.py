@@ -94,21 +94,24 @@ async def create_broker_message(task_id: str) -> str:
 
 
 def create_broker_keyboard(
-    task_url: str, task_id: str
+    task_id: str, list_id: str
 ) -> Dict[str, List[List[Dict[str, str]]]]:
     """
     Create inline keyboard for broker message.
 
     Args:
-        task_url: ClickUp task URL
         task_id: Task ID for callback data
+        list_id: List ID for callback data
 
     Returns:
         Inline keyboard markup dictionary
     """
     buttons: List[List[Dict[str, str]]] = [
         [
-            {"text": "✅ Lot qo'yildi", "callback_data": f"lot_in={task_id}"},
+            {
+                "text": "✅ Lot qo'yildi",
+                "callback_data": f"lot_in={task_id}&list_id={list_id}",
+            },
         ],
     ]
 

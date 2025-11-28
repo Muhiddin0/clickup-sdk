@@ -96,11 +96,18 @@ async def handle_dogovor_set(event: WebhookEvent) -> None:
 
         logger.info(f"  Telegram ID: {telegram_id}")
 
+        # Get list information from task
+        list_info = task.get("list", {})
+        list_id = list_info.get("id", "")
+        list_name = list_info.get("name", "N/A")
+
+        logger.info(f"📂 Task list: {list_name} (ID: {list_id})")
+
         # Create formatted message from main task
         message = await create_message(event.task_id)
 
-        # # Create inline keyboard
-        keyboard = create_keyboard(event.task_id)
+        # Create inline keyboard with task_id and list_id
+        keyboard = create_keyboard(event.task_id, list_id)
 
         print(
             f"🔍 ~ handle_dogovor_set ~ clickup/savdo/when_broker_set_dogovor/when_broker_set_dogovor.py:107 ~ {event}:"

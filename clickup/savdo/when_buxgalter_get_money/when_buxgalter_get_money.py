@@ -104,11 +104,19 @@ async def notify_accountant_on_payment_pending(event: WebhookEvent) -> None:
         )
         return
 
+    # Get list information from task
+    list_info = task.get("list", {})
+    list_id = list_info.get("id", "")
+    list_name = list_info.get("name", "N/A")
+    
+    logger.info(f"📂 Task list: {list_name} (ID: {list_id})")
+
     message = create_accountant_message(task, accountant_task)
     keyboard = create_accountant_keyboard(
         task.get("url"),
         accountant_task.get("url"),
         event.task_id,
+        list_id,
     )
 
     chat_id = normalize_chat_id(telegram_id)

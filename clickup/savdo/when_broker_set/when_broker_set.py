@@ -56,6 +56,9 @@ def extract_relation_task_id(after: Any) -> Optional[str]:
 # Broker ma'lumot joylanganda
 @dispatcher.on("taskUpdated", custom_field_set(field_name="Broker"))
 async def handle_broker_set(event: WebhookEvent) -> None:
+
+    print("🚀 ~ file: when_broker_set.py:59 ~ event:", event)
+
     """
     Handle broker field being set (assigned).
 
@@ -96,7 +99,7 @@ async def handle_broker_set(event: WebhookEvent) -> None:
 
             logger.info(f"  Telegram ID: {telegram_id}")
 
-            # Get main task for URL
+            # Get main task for URL and list information
             main_task = await clickup_client.tasks.get_task(event.task_id)
             task_url = main_task.get("url", "")
 
@@ -104,11 +107,18 @@ async def handle_broker_set(event: WebhookEvent) -> None:
                 logger.warning(f"⚠️ No URL found for main task {event.task_id}")
                 continue
 
+            # Get list information from task
+            list_info = main_task.get("list", {})
+            list_id = list_info.get("id", "")
+            list_name = list_info.get("name", "N/A")
+
+            logger.info(f"📂 Task list: {list_name} (ID: {list_id})")
+
             # Create formatted message from main task
             message = await create_broker_message(event.task_id)
 
-            # Create inline keyboard
-            keyboard = create_broker_keyboard(task_url, event.task_id)
+            # Create inline keyboard with task_id and list_id
+            keyboard = create_broker_keyboard(event.task_id, list_id)
 
             # Send message to broker with inline keyboard
             success = send_message(int(telegram_id), message, reply_markup=keyboard)

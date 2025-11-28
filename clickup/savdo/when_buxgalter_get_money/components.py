@@ -91,7 +91,7 @@ def create_accountant_message(
 
 
 def create_accountant_keyboard(
-    task_url: Optional[str], payment_task_url: Optional[str], task_id: str
+    task_url: Optional[str], payment_task_url: Optional[str], task_id: str, list_id: str
 ) -> Dict[str, List[List[Dict[str, str]]]]:
     """
     Create inline keyboard for accountant message.
@@ -100,6 +100,7 @@ def create_accountant_keyboard(
         task_url: Main ClickUp task URL
         payment_task_url: Related payment task URL
         task_id: Main task ID for callback data
+        list_id: List ID for callback data
 
     Returns:
         Inline keyboard markup dictionary
@@ -110,7 +111,7 @@ def create_accountant_keyboard(
         [
             {
                 "text": "✅ Pul qabul qilindi",
-                "callback_data": f"payment_received={task_id}",
+                "callback_data": f"payment_received={task_id}&list_id={list_id}",
             }
         ]
     )
